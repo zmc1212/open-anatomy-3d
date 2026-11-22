@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open Anatomy 3D · 开放人体解剖</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 42 42'%3E%3Crect width='42' height='42' rx='11' fill='%23fdeee4'/%3E%3Ccircle cx='21' cy='13' r='6' fill='%23e8590c'/%3E%3Crect x='14' y='21' width='14' height='14' rx='7' fill='%23e8590c'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="top">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"><span></span><span></span></span>
+        <div>
+          <h1>Open Anatomy 3D · <b>开放人体解剖</b></h1>
+          <p>免费开放的网页交互式 3D 人体解剖 · 复刻 MervinR07/open-anatomy-3d</p>
+        </div>
+      </div>
+      <nav class="links">
+        <a href="ATTRIBUTION.md">署名与来源</a>
+        <a class="primary" href="https://github.com/MervinR07/open-anatomy-3d" target="_blank" rel="noreferrer">原项目 GitHub ↗</a>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <section class="stage" aria-label="3D 人体解剖查看器">
+        <div class="oa3d-viewer" id="viewer-root">
+          <!-- 男性 / 女性切换 -->
+          <div class="oa3d-sex-toggle" id="sex-toggle" role="radiogroup" aria-label="躯体">
+            <button type="button" role="radio" aria-checked="true" class="oa3d-sex-option oa3d-sex-option-on" data-sex="male">男性</button>
+            <button type="button" role="radio" aria-checked="false" class="oa3d-sex-option" data-sex="female">女性</button>
+            <span class="oa3d-sex-thumb" id="sex-thumb" aria-hidden="true"></span>
+          </div>
+
+          <!-- 七大系统图层开关 -->
+          <div class="oa3d-layers" id="layer-toggles" role="group" aria-label="身体系统"></div>
+
+          <!-- 3D 画布 -->
+          <div class="oa3d-canvas" id="canvas-wrap">
+            <div class="oa3d-loading" id="loading" role="status">
+              <span class="oa3d-loading-bar"><span id="loading-fill"></span></span>
+              <span class="oa3d-loading-text" id="loading-text">正在加载 3D 解剖模型…</span>
+            </div>
+
+            <div class="oa3d-hover-tag" id="hover-tag" aria-live="polite" hidden>
+              <span class="oa3d-hover-name" id="hover-name"></span>
+              <span class="oa3d-hover-hint">点击固定或取消标注</span>
+            </div>
+
+            <div class="oa3d-callout-layer" id="callout-layer">
+              <svg class="oa3d-callout-svg" id="callout-svg"></svg>
+              <!-- 固定结构的标注卡片由 callouts.js 动态生成 -->
+            </div>
+
+            <button type="button" class="oa3d-zoom oa3d-zoom-out" id="zoom-out" aria-label="缩小">−</button>
+            <button type="button" class="oa3d-reset" id="reset-view" aria-label="复位视角">复位</button>
+            <button type="button" class="oa3d-zoom oa3d-zoom-in" id="zoom-in" aria-label="放大">+</button>
+          </div>
+
+          <!-- 底部旋转弧 -->
+          <div class="oa3d-rotate" id="rotate-arc"></div>
+
+          <p class="hint">拖动旋转 · Ctrl/⌘ + 滚轮或双指捏合缩放 · 右键拖动平移 · 悬停识别 · 点击固定标注</p>
+        </div>
+      </section>
+
+      <aside class="side">
+        <div class="card">
+          <div class="stats">
+            <div><strong>2</strong><span>套躯体</span></div>
+            <div><strong id="stat-structures">—</strong><span>个结构</span></div>
+            <div><strong>7</strong><span>大系统</span></div>
+          </div>
+        </div>
+
+        <div class="card selected" id="selected-card" hidden>
+          <span class="eyebrow" id="selected-category"></span>
+          <h2 id="selected-zh"></h2>
+          <p class="selected-en" id="selected-label"></p>
+          <dl>
+            <div><dt>Key</dt><dd><code id="selected-key"></code></dd></div>
+            <div><dt>系统</dt><dd id="selected-system"></dd></div>
+            <div><dt>适用躯体</dt><dd id="selected-sex"></dd></div>
+          </dl>
+          <button type="button" class="btn" id="selected-pin"></button>
+        </div>
+
+        <div class="card browse">
+          <div class="browseHead">
+            <h3>结构清单</h3>
+            <button type="button" class="link" id="clear-pins" hidden></button>
+          </div>
+          <input class="search" type="search" id="search" placeholder="搜索:心脏、femur、Kidney…"
+                 aria-label="搜索结构" />
+          <div class="list" id="structure-list"></div>
+        </div>
+      </aside>
+    </main>
+
+    <section class="install">
+      <div>
+        <h3>关于本站 · 复刻说明</h3>
+        <p>
+          本站复刻自开源项目 <a class="inline-link" href="https://github.com/MervinR07/open-anatomy-3d" target="_blank" rel="noreferrer">MervinR07/open-anatomy-3d</a>:
+          男 / 女两套全身模型,覆盖皮肤、骨骼、关节、肌肉、器官、血管、神经共 7 大系统、147 个命名结构
+          (含 12 个关节热点)。结构目录与 GLB 模型(EXT_meshopt 压缩)取自其 npm 包
+          <code>open-anatomy-3d@0.1.0</code>,模型改编自 BodyParts3D、HuBMAP 人体参考图谱与 MakeHuman,按
+          <b>CC BY 4.0</b> 署名使用(见页脚)。原版是 React + react-three-fiber 组件;本站改为
+          <b>零构建 vanilla Three.js</b> 实现,模型以 Base64 内置于
+          <code>models/*.glb.js</code>,因此支持 file:// 双击打开,并补充了全量中文译名。
+          交互与原版一致:悬停识别结构、点击固定 / 取消标注(卡片随视角跟随)、七层系统独立开关、
+          女性躯体含子宫 / 卵巢等专属器官。仅供教学演示,<b>不用于诊断</b>。
+        </p>
+      </div>
+      <div class="code">
+        <button type="button" class="copy" id="copy-snippet">复制</button>
+        <pre><code id="snippet">npm i open-anatomy-3d open-anatomy-3d-react \
+  three @react-three/fiber @react-three/drei
+
+import { AnatomyViewer } from 'open-anatomy-3d-react'
+import 'open-anatomy-3d-react/styles.css'
+
+&lt;AnatomyViewer
+  pins={[{ key: 'heart', items: ['Hypertension'] }]}
+  onStructureClick={(key, s) =&gt; console.log(key, s.label)}
+/&gt;</code></pre>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <p id="attribution"></p>
+      <p>代码 MIT · 模型 CC BY 4.0 · 仅供教学演示,不用于诊断。</p>
+    </footer>
+  </div>
+
+  <!-- 启动失败引导横幅:入口脚本被拦截(file:// 下的常见问题)时显示 -->
+  <div class="boot-banner" id="boot-banner" hidden>
+    <b>页面未能启动。</b>可能是入口脚本未加载:请改用本地 HTTP 打开 ——
+    <code>python3 tools/serve.py 8141</code> 后访问 <code>http://127.0.0.1:8141</code>;
+    或双击 <code>index.html</code>(本站支持 file://,若被拦截请检查浏览器策略)。详见 AGENTS.md。
+  </div>
+
+  <noscript><div class="boot-banner">本站需要启用 JavaScript 才能渲染 3D 解剖模型。</div></noscript>
+  <script>
+    // 8 秒仍未启动则展示引导横幅(main.js 成功启动会置 OA_BOOTED 并隐藏);
+    // 启动前的任何脚本错误也直接显示在横幅里,便于定位。
+    window.addEventListener('error', function (e) {
+      if (!window.OA_BOOTED) {
+        var b = document.getElementById('boot-banner');
+        b.hidden = false;
+        if (e && e.message) b.textContent = '启动错误:' + e.message + '(' + (e.filename || '') + ':' + e.lineno + ')';
+      }
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      if (!window.OA_BOOTED) {
+        var b = document.getElementById('boot-banner');
+        b.hidden = false;
+        var r = e.reason && e.reason.message ? e.reason.message : String(e.reason);
+        b.textContent = '启动错误:' + r;
+      }
+    });
+    setTimeout(function () {
+      if (!window.OA_BOOTED) document.getElementById('boot-banner').hidden = false;
+    }, 8000);
+  </script>
+
+  <!-- 零构建经典脚本,顺序即依赖:three → 加载器/控制器/解码器 → 模型数据 → 目录 → 模块 → 启动 -->
+  <script src="vendor/three.min.js"></script>
+  <script src="vendor/GLTFLoader.js"></script>
+  <script src="vendor/OrbitControls.js"></script>
+  <script src="vendor/meshopt_decoder.js"></script>
+  <script src="models/anatomy-male.glb.js"></script>
+  <script src="models/anatomy-female.glb.js"></script>
+  <script src="src/catalog.js"></script>
+  <script src="src/data.js"></script>
+  <script src="src/model.js"></script>
+  <script src="src/viewer.js"></script>
+  <script src="src/callouts.js"></script>
+  <script src="src/rotate-arc.js"></script>
+  <script src="src/panel.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
